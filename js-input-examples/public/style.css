@@ -1,0 +1,18 @@
+html {
+  background-color: rgb(54, 61, 68);
+  width:100%;
+  height:auto;
+  overflow: hidden;
+}
+
+
+#canvas{
+  background: linear-gradient(0deg, rgb(16, 16, 24), rgb(52, 65, 70));
+  border: 1px solid rgb(0, 120, 163);
+  width:960px;
+  height:540px;
+  position: absolute;
+  top:50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+}
