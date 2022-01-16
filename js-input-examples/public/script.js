@@ -1,6 +1,17 @@
-// alert('simple static server started');
-
-// const ctx = canvas.getContext("2d");
+function Line(_ctx, _pos_start, _pos_end, offset, _thickness, _color) {
+    _ctx.strokeStyle = _color;
+    _ctx.lineWidth = _thickness;
+  
+    if ( !offset ) { 
+      offset = {w: offset.w, h: offset.h};
+    }
+  
+    // draw a red line
+    _ctx.beginPath();
+    _ctx.moveTo(_pos_end.x+offset.w*0.5, _pos_end.y+offset.h*0.5);
+    _ctx.lineTo(_pos_start.x+offset.w*0.5, _pos_start.y+offset.h*0.5);
+    _ctx.stroke();
+  }
 
 function Rect(_ctx, _pos, _size, _color, _a){
     _ctx.globalAlpha = _a;
@@ -55,12 +66,6 @@ function Screen_Resize(_main, _ctx, _canvas) {
 
 function resize( _main ) {
     Screen_Resize(_main, _main.ctx, canvas)
-    
-    // canvas.width = window.innerWidth;
-    // canvas.height = window.innerHeight;
-
-    // canvas.style.width = `${canvas.width}px`;
-    // canvas.style.height = `${canvas.height}px`;
 }
 
 
@@ -73,7 +78,7 @@ function init_input(main) {
     };
 
     addEventListener('touchstart', (e) => {
-        get_touch_pos(main, e);
+    get_touch_pos(main, e);
 
         if (!main.isTouching) {
             main.isTouching = true;
@@ -81,7 +86,7 @@ function init_input(main) {
     });
 
     addEventListener('touchmove', (e) => {
-        get_touch_pos(main, e);
+    get_touch_pos(main, e);
 
         if (!main.isTouching) {
             main.isTouching = true;
@@ -122,7 +127,7 @@ class Player {
         this.size = size;
         this.color = color;
         this.dir = {x: 0, y: 0};
-        this.speed = 250;
+        this.speed = 300;
     }
 
     init() {
@@ -149,19 +154,19 @@ class Player {
 
         // touch
         if (this.main.isTouching) {
-            if (this.pos.x > (this.main.touch.pos.x + 2) - (this.size.w * 0.5) ) {
+            if (this.pos.x > (this.main.touch[0].pos.x + 2) - (this.size.w * 0.5) ) {
             this.pos.x = Math.floor(this.pos.x - this.speed * dt);
             }
     
-            if (this.pos.x < (this.main.touch.pos.x - 2) - (this.size.w * 0.5) ) {
+            if (this.pos.x < (this.main.touch[0].pos.x - 2) - (this.size.w * 0.5) ) {
             this.pos.x = Math.floor(this.pos.x + this.speed * dt);
             }
     
-            if (this.pos.y > (this.main.touch.pos.y + 2) - (this.size.h * 0.5) ) {
+            if (this.pos.y > (this.main.touch[0].pos.y + 2) - (this.size.h * 0.5) ) {
             this.pos.y = Math.floor(this.pos.y - this.speed * dt);
             }
     
-            if (this.pos.y < (this.main.touch.pos.y - 2) - (this.size.h * 0.5) ) {
+            if (this.pos.y < (this.main.touch[0].pos.y - 2) - (this.size.h * 0.5) ) {
             this.pos.y = Math.floor(this.pos.y + this.speed * dt);
             }
         }
@@ -191,22 +196,28 @@ class Player {
 function get_touch_pos(main, e) {
     let bounds = canvas.getBoundingClientRect();
 
-    // get the mouse coordinates, subtract the canvas top left and any scrolling
-    main.touch.pos.x = e.touches[0].pageX - bounds.left - scrollX;
-    main.touch.pos.y = e.touches[0].pageY - bounds.top - scrollY;
+    for (let id in e.touches) {
+        if (!main.touch[id]) {
+            main.touch[id] = {pos:{x:0,y:0}};
+        }
 
-    // first normalize the mouse coordinates from 0 to 1 (0,0) top left
-    // off canvas and (1,1) bottom right by dividing by the bounds width and height
-    main.touch.pos.x /= bounds.width; 
-    main.touch.pos.y /= bounds.height; 
+        // get the mouse coordinates, subtract the canvas top left and any scrolling
+        main.touch[id].pos.x = e.touches[id].pageX - bounds.left - scrollX;
+        main.touch[id].pos.y = e.touches[id].pageY - bounds.top - scrollY;
 
-    // then scale to canvas coordinates by multiplying the normalized coords with the canvas resolution
-    main.touch.pos.x *= canvas.width;
-    main.touch.pos.y *= canvas.height;
+        // first normalize the mouse coordinates from 0 to 1 (0,0) top left
+        // off canvas and (1,1) bottom right by dividing by the bounds width and height
+        main.touch[id].pos.x /= bounds.width; 
+        main.touch[id].pos.y /= bounds.height; 
 
-    // Floor position values to whole numbers
-    main.touch.pos.x = Math.floor(main.touch.pos.x);
-    main.touch.pos.y = Math.floor(main.touch.pos.y);
+        // then scale to canvas coordinates by multiplying the normalized coords with the canvas resolution
+        main.touch[id].pos.x *= canvas.width;
+        main.touch[id].pos.y *= canvas.height;
+
+        // Floor position values to whole numbers
+        main.touch[id].pos.x = Math.floor(main.touch[id].pos.x);
+        main.touch[id].pos.y = Math.floor(main.touch[id].pos.y);
+    }
 }
 
 
@@ -225,10 +236,8 @@ class Main {
 
         this.pos = { x: canvas.width*0.5, y: canvas.height*0.5}
 
-        this.touch = {
-            pos: { x: undefined, y: undefined },
-            size: { w: 0.02, h: 0.02 },
-        }
+        this.touch = {};
+
         this.isTouching = false;
 
         this.gamepads = {};  
@@ -250,6 +259,13 @@ class Main {
 
     draw() {
         this.players.forEach(ob => ob.draw());
+
+        if (this.touch[0] && this.touch[1]) {
+            Line(this.ctx, {x: this.touch[0].pos.x, y: this.touch[0].pos.y}, {x: this.touch[1].pos.x, y: this.touch[1].pos.y}, {w: 0, h: 0}, 3, "Teal");
+        }
+        if (this.touch[1] && this.touch[2]) {
+            Line(this.ctx, {x: this.touch[1].pos.x, y: this.touch[1].pos.y}, {x: this.touch[2].pos.x, y: this.touch[2].pos.y}, {w: 0, h: 0}, 3, "Teal");
+        }
     }
 
     update(dt) {
@@ -266,7 +282,6 @@ class Main {
                 this.input.gamepadLeft = gamepad[this.gamepadId].buttons[14].pressed || gamepad[this.gamepadId].axes[0] === -1;
                 this.input.gamepadRight = gamepad[this.gamepadId].buttons[15].pressed || gamepad[this.gamepadId].axes[0] === 1;
             }
-            // console.log(this.input);
         }
 
         this.players.forEach(ob => ob.update(dt));
